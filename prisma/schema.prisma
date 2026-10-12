@@ -1,0 +1,279 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+enum BusinessType {
+  INDIVIDUAL
+  SMALL_BUSINESS
+  WHOLESALER
+}
+
+enum AccountTokenType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+
+enum SourcingRequestStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  SPECIFICATIONS_CONFIRMED
+  SUPPLIER_SOURCING
+  CUSTOMER_CONFIRMATION
+  COMPLETED
+  CANCELLED
+}
+
+enum RequestItemUnit {
+  PIECE
+  PAIR
+  SET
+  BOX
+  CARTON
+  PACK
+  KG
+  TON
+  LITER
+  METER
+  ROLL
+  OTHER
+}
+
+enum RequestItemRevisionStatus {
+  DRAFT
+  CONFIRMED
+  SUPERSEDED
+}
+
+enum RequestItemImageStatus {
+  PENDING
+  CONFIRMED
+  SUPERSEDED
+}
+
+model User {
+  id              String   @id @default(uuid())
+  email           String   @unique
+  phone           String
+  passwordHash    String
+  isActive        Boolean  @default(true)
+  isEmailVerified Boolean  @default(false)
+  tokenVersion    Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  customer Customer?
+  tokens   AccountToken[]
+}
+
+model Customer {
+  id               String       @id @default(uuid())
+  userId           String       @unique
+  customerNumber   String       @unique
+  firstName        String
+  lastName         String
+  businessType     BusinessType
+  organizationName String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  user             User              @relation(fields: [userId], references: [id])
+  sourcingRequests SourcingRequest[]
+}
+
+model AccountToken {
+  id        String           @id @default(uuid())
+  userId    String
+  tokenHash String           @unique
+  type      AccountTokenType
+  expiresAt DateTime
+  createdAt DateTime         @default(now())
+  usedAt    DateTime?
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model ProductCategory {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  imageUrls   String[] @default([])
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  requestItemRevisions RequestItemRevision[]
+
+  @@index([isActive])
+}
+
+model SourcingRequest {
+  id            String                @id @default(uuid())
+  customerId    String
+  requestNumber String                @unique
+  status        SourcingRequestStatus @default(SUBMITTED)
+  customerNote  String?
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  customer     Customer      @relation(fields: [customerId], references: [id])
+  requestItems RequestItem[]
+
+  @@index([customerId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model RequestItem {
+  id                String   @id @default(uuid())
+  sourcingRequestId String
+  productName       String
+  description       String?
+  specifications    String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  sourcingRequest SourcingRequest       @relation(fields: [sourcingRequestId], references: [id])
+  revisions       RequestItemRevision[]
+  images          RequestItemImage[]
+
+  @@index([sourcingRequestId])
+  @@index([createdAt])
+}
+
+model RequestItemRevision {
+  id             String                    @id @default(uuid())
+  requestItemId  String
+  revisionNumber Int
+  productName    String
+  description    String
+  specifications String
+  quantity       Int
+  unit           RequestItemUnit
+  categoryId     String
+  status         RequestItemRevisionStatus @default(DRAFT)
+  createdAt      DateTime                  @default(now())
+  updatedAt      DateTime                  @updatedAt
+  confirmedAt    DateTime?
+
+  requestItem RequestItem     @relation(fields: [requestItemId], references: [id])
+  category    ProductCategory @relation(fields: [categoryId], references: [id])
+
+  @@unique([requestItemId, revisionNumber])
+  @@index([requestItemId])
+  @@index([categoryId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model RequestItemImage {
+  id            String                 @id @default(uuid())
+  requestItemId String
+  imageUrl      String
+  publicId      String
+  status        RequestItemImageStatus @default(PENDING)
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+  confirmedAt   DateTime?
+
+  requestItem RequestItem @relation(fields: [requestItemId], references: [id])
+
+  @@index([requestItemId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model ArticleCategory {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  articles Article[]
+
+  @@index([isActive])
+}
+
+model Article {
+  id          String    @id @default(uuid())
+  categoryId  String
+  title       String
+  slug        String    @unique
+  excerpt     String?
+  content     String
+  coverImage  String?
+  isPublished Boolean   @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  category ArticleCategory @relation(fields: [categoryId], references: [id])
+
+  @@index([categoryId])
+  @@index([isPublished])
+  @@index([publishedAt])
+  @@index([createdAt])
+}
+
+model FAQCategory {
+  id          String  @id @default(uuid())
+  name        String  @unique
+  slug        String  @unique
+  description String?
+  isActive    Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  faqs FAQ[]
+
+  @@index([isActive])
+}
+
+model FAQ {
+  id         String  @id @default(uuid())
+  categoryId String
+  question   String
+  answer     String
+  isActive   Boolean @default(true)
+  sortOrder  Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  category FAQCategory @relation(fields: [categoryId], references: [id])
+
+  @@index([categoryId])
+  @@index([isActive])
+  @@index([sortOrder])
+}
+
+model Testimonial {
+  id               String  @id @default(uuid())
+  customerName     String
+  organizationName String?
+  role             String?
+  content          String
+  customerImage    String?
+
+  isPublished Boolean @default(false)
+  sortOrder   Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isPublished])
+  @@index([sortOrder])
+  @@index([createdAt])
+}

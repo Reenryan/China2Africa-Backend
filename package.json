@@ -1,0 +1,39 @@
+{
+  "name": "backendv2",
+  "version": "2.0.0",
+  "description": "\"China2Africa backend version 2.0.0 design , following the required architecture \"",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon --watch src --ext js,ts,json --exec tsx src/Server.js",
+    "start": "tsx src/Server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Andrian Muwtii",
+  "license": "ISC",
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.10.0",
+    "@prisma/client": "^7.10.0",
+    "argon2": "^0.45.1",
+    "cloudinary": "^2.11.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.7.1",
+    "express-validator": "^7.3.2",
+    "file-type": "^22.1.1",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.4.0",
+    "nodemailer": "^10.1.0",
+    "nodemon": "^3.1.14",
+    "pg": "^8.23.1",
+    "pino": "^10.4.0",
+    "pino-http": "^11.0.0",
+    "prisma": "^7.10.0"
+  },
+  "devDependencies": {
+    "pino-pretty": "^13.2.0",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}
